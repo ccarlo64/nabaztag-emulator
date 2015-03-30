@@ -1,0 +1,180 @@
+#!/bin/bash
+
+source /usr/www/cgi-bin/setup.inc
+source /usr/www/cgi-bin/utils.inc
+source /usr/www/cgi-bin/leds.inc
+
+rfiddetect=0
+RFID_DETECTED=0
+SOUND="twang_04.mp3"
+dbus-monitor --system | while read line 2> /dev/null
+do
+      
+     #echo "===>"$line     
+     # ---------------------
+     # BUTTON HANLDER
+     # DBUS
+     # --------------------- 
+     # Long Button Press Detected
+     # Start or stop Tag Recording
+     # ---------------------          
+     echo $line | grep "member=lclick_start"                                          
+     if [ $? -eq 0 ]; then                                                     
+        KillProcess
+        if [ -e "$CNF_DATADIR/Run/rfid.record" ]; then 
+            StopTagRecording
+        else
+            StartTagRecording
+	fi        
+     fi
+     
+     # --------------------- 
+     # Single Click  Detected
+     # User Defined Action
+     # --------------------- 
+      echo $line | grep "member=click"
+      if [ $? -eq 0 ]; then
+##         PlaySound "$CNF_DATADIR/Sounds/${SOUND}" 
+	 echo "1" > /usr/openkarotz/Extra/1
+      fi
+      
+      # ---------------------  
+      # Double Click
+      # User Defined Action
+      # ---------------------  
+      echo $line | grep "member=dclick"
+      if [ $? -eq 0 ]; then
+##         PlaySound $CNF_DATADIR/Sounds/${SOUND} 
+	 echo "2" > /usr/openkarotz/Extra/2
+       fi
+       
+       # ---------------------  
+       # Triple Click
+       # PreDefined Action
+       # ---------------------  
+       echo $line | grep "member=tclick"  
+       if [ $? -eq 0 ]; then                                       
+         PlaySound $CNF_DATADIR/Sounds/flush.mp3
+         /sbin/reboot
+       fi                                              
+ 
+      # ---------------------
+      # RFID HANDLER
+      # DBUS
+      # ---------------------
+      # Process Tag Action
+      # ---------------------
+      if [ $RFID_DETECTED -eq 7 ]; then
+          # Enregistrement Tag
+          if [ -e "$CNF_DATADIR/Run/rfid.record" ]; then
+             if [ -e "$CNF_DATADIR/Rfid/${RFID_ID}.rfid" ]; then
+                PlaySound $CNF_DATADIR/Sounds/rfid_error.mp3
+                PlaySound $CNF_DATADIR/Voice/Rfid_objet_deja_enregistre.mp3
+             else
+                echo "" > $CNF_DATADIR/Rfid/${RFID_ID}.rfid
+                echo $RFID_COLOR > $CNF_DATADIR/Rfid/${RFID_ID}.color
+                echo $RFID_TYPE  > $CNF_DATADIR/Rfid/${RFID_ID}.type
+                PlaySound $CNF_DATADIR/Sounds/rfid_ok.mp3
+                PlaySound $CNF_DATADIR/Voice/Rfid_objet_enregistre.mp3
+             fi
+          # Suppression Tag   
+          elif [ -e "$CNF_DATADIR/Run/rfid.delete" ]; then
+             Playsound $CNF_DATADIR/Voice/Rfid_objet_supprime.mp3 
+             rm -f $CNF_DATADIR/Rfid/$RFID_ID.*
+          else
+              echo "$CNF_DATADIR/Rfid/${RFID_ID}.rfid"
+ 	      if [ -e "$CNF_DATADIR/Rfid/${RFID_ID}.rfid" ]; then	         
+ 	          if [ ! -e "$CNF_DATADIR/Rfid/${RFID_ID}.action" ]; then 
+ 	             if [ ! -e "$CNF_DATADIR/Run/karotz.sleep" ]; then
+ 	             	PlaySound $CNF_DATADIR/Sounds/rfid_error.mp3
+ 	             	PlaySound $CNF_DATADIR/Voice/Rfid_objet_pas_action.mp3
+ 	             fi
+ 	          else
+ 	             Leds FF0000 000000 0 1
+ 	             if [ ! -e "$CNF_DATADIR/Run/karotz.sleep" ]; then
+ 	                 PlaySound $CNF_DATADIR/Sounds/${SOUND}
+ 	             fi
+ 	             SCENE_ID$(cat CNF_DATADIR/Rfid/${RFID_ID}.rfid)
+                     SCENE_CMD=$(cat $CNF_DATADIR/Rfid/${RFID_ID}.cmd)
+ 	             Log "[Rfid]" "Calling external action : $(GetCmdName $SCENE_CMD)"
+		     LedsRestore
+              	     eval $(cat $CNF_DATADIR/Rfid/${RFID_ID}.action | base64 -d)
+              	  fi
+              else
+              	    if [ ! -e "$CNF_DATADIR/Run/karotz.sleep" ]; then
+                    	PlaySound $CNF_DATADIR/Sounds/rfid_error.mp3
+ 		    	PlaySound $CNF_DATADIR/Voice/Rfid_Object_inconnu.mp3
+ 		    fi
+              fi
+          fi                                           
+          RFID_DETECTED=0         
+      fi 
+      
+       # ---------------------
+       # Read Color
+       # ---------------------                                                         
+      if [ $RFID_DETECTED -eq 6 ]; then                                         
+         RFID_COLOR=$(awk -F\  '{print $2}' <<< "$line") 
+         #echo "Color==>"$RFID_COLOR"<=="                                            
+         RFID_DETECTED=7                                                      
+      fi
+      
+      # ---------------------
+      # Discard Picture                                                              
+      # ---------------------
+      if [ $RFID_DETECTED -eq 5 ]; then                                        
+         #echo "Picture==>"$line
+         RFID_DETECTED=6                                                     
+      fi
+       
+       # ---------------------
+       # Read Type
+       # ---------------------                                                                  
+       if [ $RFID_DETECTED -eq 4 ]; then                                        
+          RFID_TYPE=$(awk -F\  '{print $2}' <<< "$line")
+          GetRfidTypeName $RFID_TYPE   
+          RFID_DETECTED=5                                                        
+       fi                
+
+       # ---------------------     
+       # Discard App          
+       # ---------------------                                                 
+       if [ $RFID_DETECTED -eq 3 ]; then                                         
+         #echo "App==>"$line   
+         RFID_DETECTED=4                                                        
+       fi 
+ 
+      # ---------------------
+      # Discard Flag                                                     
+      # ---------------------
+      if [ $RFID_DETECTED -eq 2 ]; then                                      
+         #echo "Flag==>"$line   
+         RFID_DETECTED=3                                                    
+      fi                     
+ 
+      # ---------------------                                 
+      # Read TAG ID
+      # ---------------------
+      if [ $RFID_DETECTED -eq 1 ]; then
+          
+          RFID_ID=$(awk -F\" '{print $2}' <<< "$line")
+          #echo "ID ==>"$RFID_ID"<==" 
+          if [ -e "$CNF_DATADIR/Run/rfid.record" ]; then 
+             RFID_DETECTED=2
+          else
+             RFID_DETECTED=7
+             
+          fi
+          # PlaySound $CNF_DATADIR/Sounds/rfid_ok.mp3 
+      fi
+      
+      # ---------------------      
+      # Tag Detected 
+      # ---------------------
+      echo $line | grep "tag_in"     
+      if [ $? -eq 0 ]; then
+ 	    RFID_DETECTED=1         
+      fi
+   
+ done
+                                  
