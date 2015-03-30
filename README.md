@@ -18,3 +18,10 @@ if all goes well you will see 'Authentication complete ....'
 go to set the plugin server OJN:-)
 
 obviously not all work (would be nice) but something already goes ..
+
+
+** v002 add buttons click
+now working one click and two click.
+
+please copy 'dbus_events' into /usr/www/cgi-bin 
+backup first the original if you want...  :-)
