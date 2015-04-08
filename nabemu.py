@@ -46,6 +46,14 @@ print 'Yeee! Socket Connected to ' + h + ' on ip ' + remote_ip
 def testButton():
 # do something here ... 2 seconds
     global s
+    if  os.path.exists('R'):
+      rfid = open('R').read().replace('\n','') 
+      subprocess.call(["rm", "R"])
+      #rfidSend = 'wget "http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+'"'
+      rfidSend='http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+''
+      #subprocess.call( rfidSend, shell=True )
+      subprocess.call(["wget", rfidSend])
+      print "rfid send", rfid
     if  os.path.exists('1'):
       subprocess.call(["rm", "1"])
       m='<message from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' id=\'26\'><button xmlns="violet:nabaztag:button"><clic>1</clic></button></message>'
@@ -203,13 +211,23 @@ d = recv_timeout(s)
 print 'Authentication complete....'
 print 'Now wait.... (press ^C to exit)...'
  
+msgExtra=re.findall('<message[^>]*><packet[^>]*>(?:[^<]*)</packet></message>',d)
+l1=len(msgExtra)
+l2=0
+print 'found ',l1, ' message extra..'
+ 
 testButton()
 
 while 1:
 
-    s.setblocking(1)         
-    da = s.recv(1024)
-    
+    s.setblocking(1)
+    if l1>0:
+      da=msgExtra[l2]
+      l2=l2+1
+      l1=l1-1
+    else:
+      da = s.recv(1024)    
+        
     ###c#print '.'
     if len(da)>0:
       #c#print 'receive:', da
@@ -296,8 +314,28 @@ while 1:
         #<iq from='0013d3846d30@ojn.raspberry.pi/asleep' to='ojn.raspberry.pi' type='set' id='23'><unbind xmlns='urn:ietf:params:xml:ns:xmpp-bind'><resource>asleep</resource></unbind></iq>
 #wait
 #
+      if c[0:12]=='7f09000000ff':
+        # reboot
+        subprocess.call([script,"reboot"])
 ########################
 #
+# KAROTZ dedicated :)
+#
+######################## 
+      if c[0:12]=='7fcc000001ff':
+        # karotz 000001
+        subprocess.call([script,"k000001"])
+      if c[0:12]=='7fcc000002ff':
+        # karotz 000002
+        subprocess.call([script,"k000002"])
+      if c[0:12]=='7fcc000003ff':
+        # karotz 000003
+        subprocess.call([script,"k000003"])
+########################
+#
+# 
+#
+######################## 
       if c[0:4]=='7f04':
         dx=False
         sx=False        
@@ -358,9 +396,9 @@ while 1:
         ##sound = sound + chr(10)
         print sound
         print c
-        commandShell=''
-        commandTmp=''
-        countCommand=0  
+        #commandShell=''
+        #commandTmp=''
+        #countCommand=0  
         listn=re.split('[\n]+',sound) #create list by newline
 
         newlistn=[]
@@ -376,33 +414,32 @@ while 1:
             if not mw and not si and not se and not pl:
               newlistn.append(el)     
         tt=''
-        commandLen=len(newlistn)
+        #commandLen=len(newlistn)
         for el in newlistn:
-            countCommand = countCommand + 1
-            background='Y'
-            if countCommand<commandLen:
-              background='N'
+            #countCommand = countCommand + 1
+            #background='Y'
+            #if countCommand<commandLen:
+            #  background='N'
             sound=''  
             mm = re.search('MU (.+)', el) #mp3
             if mm:
-              c=mm.group(1)
-              sound=c
-              commandTmp = script+' sound '+ background+ ' '+sound
+              sound=mm.group(1)
+              #sound=c
+              #commandTmp = script+' sound '+ ' '+sound
               
             mm = re.search('^ST (.+)', el)  #stream
             if mm:
-              c=mm.group(1)
-              sound=c
-              commandTmp = script+' stream '+ background+ ' '+sound
+              sound=mm.group(1)
+              #sound=c
+              #commandTmp = script+' stream '+ ' '+sound
             tt=tt+sound+'\n'
-            print 'exec ',commandTmp
+            #print 'exec ',commandTmp
             ###commandShell = commandShell + commandTmp + ' &&\n' #v2  
             #subprocess.call( commandTmp, shell=True )
         #if countCommand>1:
-        subprocess.call( 'echo "'+tt+'" >lista.txt', shell=True )
-
+        subprocess.call( 'echo "'+tt+'" >/tmp/list.txt', shell=True )
         subprocess.call( '/bin/killall mplayer >> /dev/null 2>> /dev/null', shell=True )
-        subprocess.call( 'mplayer -quiet -playlist lista.txt &', shell=True )
+        subprocess.call( '/usr/bin/mplayer -quiet -playlist /tmp/list.txt &', shell=True )
         
         #print commandShell
 

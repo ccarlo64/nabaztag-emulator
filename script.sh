@@ -64,9 +64,18 @@ leds)
     export QUERY_STRING
     /usr/www/cgi-bin/leds
     ;;
+reboot)
+    #reboot
+    shift
+    /sbin/reboot  
+    ;;
+k000001)
+    #karotz 000001 photo to email
+    shift
+    /usr/www/cgi-bin/snapshot_email
+    ;;
 *)
     #altro
     echo "Option $1 is not processed..."
     ;;
 esac
-    
