@@ -13,6 +13,9 @@ import base64
 import re
 # variables
 #
+pathRfid='/usr/openkarotz/Extra/R'
+path1Click='/usr/openkarotz/Extra/1'
+path2Click='/usr/openkarotz/Extra/2'
 script = '/usr/openkarotz/Extra/script.sh'
 #script = '/tmp/script.sh'
 rgb=['000000','0000ff','00ff00','00ffff','ff0000','ff00ff','ffff00','ffffff']
@@ -46,21 +49,21 @@ print 'Yeee! Socket Connected to ' + h + ' on ip ' + remote_ip
 def testButton():
 # do something here ... 2 seconds
     global s
-    if  os.path.exists('R'):
-      rfid = open('R').read().replace('\n','') 
-      subprocess.call(["rm", "R"])
-      #rfidSend = 'wget "http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+'"'
+    if  os.path.exists(pathRfid):
+      rfid = open(pathRfid).read().replace('\n','') 
+      subprocess.call(["rm", pathRfid])
+      #rfidSend = '/bin/wget "http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+'"'
       rfidSend='http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+''
       #subprocess.call( rfidSend, shell=True )
-      subprocess.call(["wget", rfidSend])
+      subprocess.call(["/bin/wget", rfidSend])
       print "rfid send", rfid
-    if  os.path.exists('1'):
-      subprocess.call(["rm", "1"])
+    if  os.path.exists(path1Click):
+      subprocess.call(["rm", path1Click])
       m='<message from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' id=\'26\'><button xmlns="violet:nabaztag:button"><clic>1</clic></button></message>'
       sendmsg(s,m)
       print "one button click!"
-    if  os.path.exists('2'):
-      subprocess.call(["rm", "2"])
+    if  os.path.exists(path2Click):
+      subprocess.call(["rm", path2Click])
       m='<message from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' id=\'26\'><button xmlns="violet:nabaztag:button"><clic>2</clic></button></message>'
       sendmsg(s,m)
       print "two button click!"
