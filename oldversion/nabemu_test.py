@@ -2,7 +2,6 @@
 # 2015 v 001
 #      v 002 add buttons events (one and two click)
 #      v3 test with authentication
-#      v3.1 add ping
 import random
 import string
 
@@ -29,12 +28,13 @@ script = '/usr/openkarotz/Extra/script.sh'
 h = 'openjabnab.fr'   ################# CHANGE HERE
 port = 5222;
 mac      = "000000000000" ################ CHANGE HERE
-password = "123456789012"  ################ CHANGE HERE if you want. (12 numbers)
+password = "123456789012"  
 ##password = ''.join(random.choice(string.digits) for _ in range(12))
 passwordX=''.join(hex( int(a,16) ^ int(b,16) )[2:] for a,b in zip(mac, password))
 
 rgb=['000000','0000ff','00ff00','00ffff','ff0000','ff00ff','ffff00','ffffff']
 #none blue green cyan red violet yellow white
+
 
 ############# Create sock
 try:
@@ -54,18 +54,6 @@ s.connect((remote_ip , port))
 s.setblocking(0)
 print 'Yeee! Socket Connected to ' + h + ' on ip ' + remote_ip
 
-
-
-############################
-# FUNCTION ping (or similar..) v3.1
-############################
-def testPing():
-    global s
-    m='<presence from=\''+mac+'@'+h+'/idle\' id=\'1\'></presence>'
-    sendmsg(s,m)
-    print "PING!",m
-    # every 30 seconds (to much?)
-    threading.Timer(30, testPing).start()
 ############################
 # FUNCTION verify button tot seconds v002
 ############################
@@ -84,12 +72,12 @@ def testButton():
       subprocess.call(["/bin/rm", path1Click])
       m='<message from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' id=\'26\'><button xmlns="violet:nabaztag:button"><clic>1</clic></button></message>'
       sendmsg(s,m)
-      print "one button click!",m
+      print "one button click!"
     if  os.path.exists(path2Click):
       subprocess.call(["/bin/rm", path2Click])
       m='<message from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' id=\'26\'><button xmlns="violet:nabaztag:button"><clic>2</clic></button></message>'
       sendmsg(s,m)
-      print "two button click!",m
+      print "two button click!"
     threading.Timer(2, testButton).start()
 ############################
 # FUNCTION decode msg packet
@@ -144,9 +132,9 @@ def recv_timeout(the_socket,timeout=1):
                 total_data.append(data)
                 #change the beginning time for measurement
                 begin=time.time()
-            else:
+           # else:
                 #sleep for sometime to indicate a gap
-                time.sleep(0.1)
+            #    time.sleep(0.1)
         except:
             pass
      
@@ -162,7 +150,6 @@ sendmsg(s,m)
 d = recv_timeout(s)
 print 'receive:',d
 ### 1
-# test if already register (file user.txt with mac address)
 already=''
 if os.path.exists(userPath):
     already = open(userPath).read().replace('\n','') 
@@ -195,9 +182,8 @@ if mm:
   #b=mm.group(0)
   c=mm.group(1)
 else:
-  print 'Error fase 2 nonce not found :('
-  sys.exit()   
-  
+  print 'Error fase 2 :('
+  sys.exit()    
 nc="00000001"
 nonce = c
 #         1234567890123
@@ -205,8 +191,11 @@ nonce = c
 cnonce = ''.join(random.choice(string.digits) for _ in range(13))
 cnonce = cnonce + chr(0)
 digest_uri="xmpp/"+h
+other = ',nc='+nc+',qop=auth,digest-uri="xmpp/'+h+'",response=566acb262696d7ccdb7523f0e5e8510b,charset=utf-8'
+stringa = 'username="'+mac+'",nonce="'+nonce+'",cnonce="'+cnonce+'"'+other
+a=base64.b64encode(stringa)
 
-# crypt crypt
+# cryptcrypt
 c1=md5.new()
 c1.update(mac + "::" + password)
 c2=md5.new()
@@ -231,7 +220,7 @@ sendmsg(s,m)
 d = recv_timeout(s)
 print 'receive:',d
 
-#riceive ok register <challenge xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>cnNwYXV0aD1iNTk4NDM1NjY2OWJhM2JkNWZhMTU1Nzg4YjgyNDJjZg==</challenge>
+#ricevo risposta ok registrato <challenge xmlns='urn:ietf:params:xml:ns:xmpp-sasl'>cnNwYXV0aD1iNTk4NDM1NjY2OWJhM2JkNWZhMTU1Nzg4YjgyNDJjZg==</challenge>
 mm = re.search('<challenge[^>]*>([^<]*)</challenge>', d)
 if mm:
    text_file = open(userPath, "w")
@@ -292,15 +281,14 @@ print 'receive:',d
 print 'Authentication complete....'
 print 'Now wait.... (press ^C to exit)...'
 
+
  
 msgExtra=re.findall('<message[^>]*><packet[^>]*>(?:[^<]*)</packet></message>',d)
 l1=len(msgExtra)
 l2=0
 print 'found ',l1, ' message extra..'
-
-# start thread
+ 
 testButton()
-testPing()
 
 while 1:
 
@@ -314,27 +302,24 @@ while 1:
         
     ###c#print '.'
     if len(da)>0:
-      ##print '>receive:', da
+      print '>>>receive:', da
       a= repr(da)
 #<message[^>]*><packet>([^<]*)</resource></unbind>"),
 #<message from='net.openjabnab.platform@ojn.raspberry.pi/services' to='0019db9ed017@ojn.raspberry.pi/Idle' id='OJaNa-12'><packet xmlns='violet:packet' format='1.0' ttl='604800'>fwoAAFMA+v6PEfny7vv6xsCbhiAF5ZrDtizGU3Y7gyqobhDG/zTz+FTMY/iStbDc/wDlxjcgAH8w5hE+SUc0W8NBXSj4N0J/JR/Gjkys1nvtgH/ClYgkRf8=</packet></message>
-#<presence from='000e8e2d053f@openjabnab.fr/idle' to='000e8e2d053f@openjabnab.fr/idle' id='1'/> PING RESPONSE
-      #test ping response...
-      mm=re.match('"<presence',a)
-      if mm:
-        print "PONG!"
-      print ':', a
       mm=re.search('<message[^>]*><packet[^>]*>([^<]*)</packet></message>',a)
+      #mm = re.search('>(.+)</message>', a)
+      #b=mm.group(0)
+      #c=mm.group(1)
+      #mm = re.search('>(.+)</packet>', c)
+      #b=mm.group(0)
       if not mm:
-        print 'error search message: unknown'
-        c="7f0000000000000000"
-        ###sys.exit()            
-      else:
-        c=mm.group(1)
-        #c#print 'packet:',c
-        a=base64.b64decode(c)
-        b=''
-        c=b.join(x.encode('hex') for x in a)
+        print 'error search message!'
+        sys.exit()            
+      c=mm.group(1)
+      #c#print 'packet:',c
+      a=base64.b64decode(c)
+      b=''
+      c=b.join(x.encode('hex') for x in a)
 
       print "<<<<<<< ",c
 ######################## sleep
@@ -432,7 +417,6 @@ while 1:
         l = int(c[8:10],16)  
         #c#print ' len: ', l
         l = l*2 + 18 - 8
-        # len not used...
         #c#print 'dati:', c[18:l]
         type = c[18:20]
 #### move ears        
@@ -444,62 +428,60 @@ while 1:
           if (dx=='00') and (sx=='00'):
              rst='0' #do reset
           subprocess.call([script,"ears",str(int(sx,16)),str(int(dx,16)),rst])
+          #from subprocess import Popen  
+          #p = Popen(ctmp, shell=True) 
 ### others (to do)
         if type=='00': #disable
-          print 'type disable', type, c[20:22]
+          print 'type disable', type
         if type=='01': #meteo
-          print 'type meteo', type, c[20:22]
+          print 'type meteo', type
         if type=='02': #borse
-          print 'type borse', type, c[20:22]
+          print 'type borse', type
         if type=='03': #traffic
-          print 'type traffic', type, c[20:22]
+          print 'type traffic', type
         if type=='06': #mail
-          print 'type mail', type, c[20:22]
+          print 'type mail', type
         if type=='07': #air
-          print 'type air', type, c[20:22]
+          print 'type air', type
         if type=='08': #blinknose
-          print 'type blinknose', type, c[20:22]
+          print 'type blinknose', type
 ### color breath    
         if type=='09': #ledbreath
-          print 'type ledbreath', type, c[20:22]
+          #c#print 'type ledbreath', type
           color = rgb[ int(c[20:22],16) ]
           subprocess.call([script,"leds",color])
         
 #openjabnab.fr !!!!
         if type=='21': #ledbreath
-          print 'OPENJABNAB.FR type ledbreath', type, c[20:22]
+          #c#print 'type ledbreath', type
           color = rgb[ int(c[20:22],16) ]
           subprocess.call([script,"leds",color])
-        if type=='22': #set volume
-          print 'OPENJABNAB.FR type volume', type, c[20:22]
-          #volume = rgb[ int(c[20:22],16) ]
-          #subprocess.call([script,"volume",volume])
-        if type=='23': #set taichi
-          print 'OPENJABNAB.FR type taichi', type, c[20:22]
-          #taichi = rgb[ int(c[20:22],16) ]
-          #subprocess.call([script,"taichi",taichi])
  
 ### others..
         if type=='0e': #taichi
-          print 'type taichi', type, c[20:22]
-### block crypt message....
+          print 'type taichi', type
+### block message....
       if c[0:4]=='7f0a':
         ##print 'msg type 0a message block'
         l = int(c[8:10],16)
         hb = int(c[6:8],16)
         print ' len ', l, hb
         l = l*2 + 10 - 2 + hb*256
-        # len not used...
         #l = len(c) -10
         ##print ' dati ', c[10:l]
         #decode
         P=c[10:] #l
         sound = decodeString( P )
-        print sound
-        #,sound.encode('hex')
+        ##sound = sound + chr(10)
+        print sound,sound.encode('hex')
         print c
+        #commandShell=''
+        #commandTmp=''
+        #countCommand=0  
         listn=re.split('[\n]+',sound) #create list by newline
-        newlistn=[]     
+
+        newlistn=[]
+       
         for elink in listn:
             repStr = 'http://'+h
             el=re.sub('broadcast',repStr,elink) #
@@ -509,27 +491,41 @@ while 1:
             pl = re.search('^PL([^.]*)', el) # excludes PL
 #add type for openjabnab.fr !!!
             rb = re.search('^RB([^.]*)', el) # excludes RB (reset bunny??)
-            gv = re.search('^GV([^.]*)', el) # volume ?!
-            if not mw and not si and not se and not pl and not rb and not gv:
+            if not mw and not si and not se and not pl and not rb:
               newlistn.append(el)     
         tt=''
         #commandLen=len(newlistn)
         for el in newlistn:
+            #countCommand = countCommand + 1
+            #background='Y'
+            #if countCommand<commandLen:
+            #  background='N'
             sound=''  
             mm = re.search('MU (.+)', el) #mp3
             if mm:
-              sound=mm.group(1)             
+              sound=mm.group(1)
+              #sound=c
+              #commandTmp = script+' sound '+ ' '+sound
+              
             mm = re.search('^ST (.+)', el)  #stream
             if mm:
               sound=mm.group(1)
+              #sound=c
+              #commandTmp = script+' stream '+ ' '+sound
             tt=tt+sound+'\n'
-
+            #print 'exec ',commandTmp
+            ###commandShell = commandShell + commandTmp + ' &&\n' #v2  
+            #subprocess.call( commandTmp, shell=True )
+        #if countCommand>1:
         subprocess.call( 'echo "'+tt+'" >/tmp/list.txt', shell=True )
         subprocess.call( '/bin/killall mplayer >> /dev/null 2>> /dev/null', shell=True )
         subprocess.call( '/usr/bin/mplayer -quiet -playlist /tmp/list.txt &', shell=True )
         
+        #print commandShell
+
+              #from subprocess import Popen  
+              #p = Popen(ctmp, shell=True)
 
 #Close the socket
 s.close()
-# end :-(
-
+#
