@@ -6,11 +6,13 @@ rfid fix
 
 events: 
 1 click ok
+
 2 click ok
+
 3 click start emulator
 long click start recorder after sound, 3 second of registration, after the audio file is send to server
 
-taichi experimental (based on nabaztag choreography
+taichi experimental (based on nabaztag choreography)
 fix and fix..
 
 2015 v 001
