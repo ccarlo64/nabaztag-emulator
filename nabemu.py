@@ -3,6 +3,8 @@
 #      v 002 add buttons events (one and two click)
 #      v3 test with authentication
 #      v3.1 add ping
+#      v3.2 fix rfid problem..... 
+#      v3.3 add taichi add and record voice and fix
 import random
 import string
 
@@ -18,6 +20,20 @@ import base64
 import re
 # variables
 #
+midiList=["midi_1noteA4","midi_1noteB5","midi_1noteBb4","midi_1noteC5",
+"midi_1noteE4","midi_1noteF4","midi_1noteF5","midi_1noteG5","midi_2notesC6C4",
+"midi_2notesC6F5","midi_2notesD4A5","midi_2notesD4G4","midi_2notesD5G4",
+"midi_2notesE5A5","midi_2notesE5C6","midi_2notesE5E4","midi_3notesA4G5G5",
+"midi_3notesB5A5F5","midi_3notesB5D5C6","midi_3notesD4E4G4","midi_3notesE5A5C6",
+"midi_3notesE5C6D5","midi_3notesE5D5A5","midi_3notesF5C6G5"]
+defaultLedColor='00FF00'
+sleep=0
+infoTaichi=0
+bootVer="18673"
+pathAudio='/usr/openkarotz/Extra/A'
+pathAudioFile='/usr/openkarotz/Extra/audio.wav'
+pathLocate='/usr/openkarotz/Extra/locate.txt'
+ledPath ='/usr/openkarotz/Extra/led.txt'
 userPath ='/usr/openkarotz/Extra/user.txt'
 pathRfid='/usr/openkarotz/Extra/R'
 path1Click='/usr/openkarotz/Extra/1'
@@ -25,16 +41,46 @@ path2Click='/usr/openkarotz/Extra/2'
 script = '/usr/openkarotz/Extra/script.sh'
 #script = '/tmp/script.sh'
 #h = 'ojn.raspberry.pi'
-#h = 'openznab.it' 
-h = 'openjabnab.fr'   ################# CHANGE HERE
+h = 'openznab.it' 
+#h = 'openjabnab.fr'   ################# CHANGE HERE
 port = 5222;
-mac      = "000000000000" ################ CHANGE HERE
+mac      = "000e8e2d053f" ################ CHANGE HERE
+#mac = open('/sys/class/net/wlan0/address').readline().replace('\n', '').replace(':','') #automac (pixel :) )
 password = "123456789012"  ################ CHANGE HERE if you want. (12 numbers)
 ##password = ''.join(random.choice(string.digits) for _ in range(12))
 passwordX=''.join(hex( int(a,16) ^ int(b,16) )[2:] for a,b in zip(mac, password))
 
 rgb=['000000','0000ff','00ff00','00ffff','ff0000','ff00ff','ffff00','ffffff']
 #none blue green cyan red violet yellow white
+
+
+# recover info by locator... and find ping server
+ping=h
+if  os.path.exists(pathLocate):
+  subprocess.call(["rm", pathLocate])
+
+locate='http://'+h+'/vl/locate.jsp?sn='+mac+'&h=4&v='+bootVer#####+'18673'
+subprocess.call( "/usr/bin/curl -0 -A MTL '"+locate+"' >"+pathLocate, shell=True )
+print locate
+f=open(pathLocate, "r")
+for line in f:
+  mm=re.search('ping (.*)\n',line)
+  if mm:
+    break
+if mm:
+  ping=mm.group(1)
+
+print ping
+#sys.exit()
+
+#POST /vl/record.jsp?sn=0019db9ed017&v=18005&h=4&m=0 HTTP/1.0
+#User-Agent: MTL
+#Pragma: no-cache
+#Icy-MetaData:1
+#Host: tagtag.nabaztag.objects.violet.net
+#Content-length: 2876
+#
+
 
 ############# Create sock
 try:
@@ -54,7 +100,61 @@ s.connect((remote_ip , port))
 s.setblocking(0)
 print 'Yeee! Socket Connected to ' + h + ' on ip ' + remote_ip
 
-
+############################
+# FUNCTION restore/set led
+############################
+def restoreLed( defaultLedColor, ledPath ):
+    if os.path.exists(ledPath):
+        defaultLedColor = open(ledPath).read().replace('\n','') 
+    subprocess.call([script,"leds",defaultLedColor])   
+    return defaultLedColor
+############################
+# FUNCTION taichi
+############################
+#// 
+#// donc si x=30, (x*R)>>7 => 15  45 mn
+#// donc si x=40, (x*R)>>7 => 20  61 mn
+#// donc si x=80, (x*R)>>7 => 40  122 mn
+#    R=60*((rand&127)+64)) => 64  196 mn
+#// donc si x=216, (x*R)>>7 => 108  330 mn
+#// donc si x=255, (x*R)>>7 => 127  390 mn, soit 2  6,5h
+#openjabnab.fr 
+#<option value="10" selected >Ultra</option> 0x0a
+#<option value="30"  >Beaucoup</option> 0x1e
+#<option value="60"  >Souvent</option> 0x3c
+#<option value="120"  >Un peu</option> 0x78
+#<option value="0"  >Pas de TaïChi</option>
+# base source
+#<option value="50" <?php if ($frequency==50) echo 'selected'; ?> >Un peu...</option> 0x32
+#<option value="125" <?php if ($frequency==125) echo 'selected'; ?>>Beaucoup...</option> 0x7d
+#<option value="250" <?php if ($frequency==250) echo 'selected'; ?>>A la folie...</option> 0xfa
+#<option value="0" <?php if ($frequency==0) echo 'selected'; ?>>Pas du tout!</option>
+# fr      # it      # base 
+# 10(0a)  # 255(ff) # 250(fa)   a la folie
+# 30(1e)  # 125(7d) # 125(7d)   beaucoup
+# 60(3c)  # --      # ---   souvent ###########
+# 120(78) # 50(32)  # 50(32)    un peu
+# 0       # 0       # 0     pas du tout
+def taichi(infoTaichi):
+    nextTaichi=0
+    if infoTaichi>0:
+        if infoTaichi=="ff" or infoTaichi=="fa" or infoTaichi=="0a":
+          nextTaichi = random.randint(15,45) #a la folie
+        if infoTaichi=="7d" or infoTaichi=="1e":
+          nextTaichi = random.randint(20,61) #beaucoup
+        if infoTaichi=="3c":
+          nextTaichi = random.randint(40,122) #souvent
+        if infoTaichi=="32" or infoTaichi=="78":
+          nextTaichi = random.randint(64,196) #un peu
+    #    if infoTaichi==216:
+    #      nextTaichi = random.randint(108,330)
+    #    if infoTaichi==255:
+    #      nextTaichi = random.randint(127,390)
+        nextTaichi=nextTaichi*60 #second
+    else:
+        nextTaichi=0
+    print "next taichi after ....",nextTaichi," seconds..."
+    return nextTaichi
 
 ############################
 # FUNCTION ping (or similar..) v3.1
@@ -72,13 +172,31 @@ def testPing():
 def testButton():
 # do something here ... 2 seconds
     global s
+
+    if  os.path.exists(pathAudio):
+      subprocess.call(["/bin/rm", pathAudio])
+      subprocess.call(["/bin/rm", pathAudioFile])
+      tt = "/usr/bin/ffmpeg -f oss -i /dev/dsp "+pathAudioFile+" -t 00:00:03"
+      #subprocess.call(["/usr/bin/rm", pathRfid])
+      subprocess.call( tt, shell=True )      
+      audio = 'http://'+h+'/vl/record.jsp?sn='+mac+'&v='+bootVer+'&h=4&m=0'
+      tt = "/usr/bin/curl -0 --header 'Content-Type:application/octet-stream' --data-binary @"+pathAudioFile+" '"+audio+"'"
+      subprocess.call( tt, shell=True )      
+
+
     if  os.path.exists(pathRfid):
       rfid = open(pathRfid).read().replace('\n','') 
-      subprocess.call(["rm", pathRfid])
+      rfid=rfid.lower()
+      subprocess.call(["/bin/rm", pathRfid])
       #rfidSend = '/bin/wget "http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+'"'
-      rfidSend='http://'+h+'/vl/rfid.jsp?sn='+mac+'&v=18673&h=4&t='+rfid+''
-      #subprocess.call( rfidSend, shell=True )
-      subprocess.call(["/bin/wget", rfidSend])
+      rfidSend='http://'+h+'/vl/rfid.jsp?sn='+mac+'&v='+bootVer+'&h=4&t='+rfid ###+''
+#      subprocess.call( "/bin/wget -O rfid.txt "+optionWget+" "+optionWgetPing+" '"+rfidSend+"'", shell=True )  
+
+      subprocess.call( "/usr/bin/curl -0 -A MTL --header 'Accept: ' --header 'Pragma: no-cache' --header 'Icy-MetaData: 0' --header 'Host: "+ping+"' '"+rfidSend+"' >rfid.txt", shell=True )      
+#      print "/usr/bin/curl -A MTL --header 'Accept: ' --header 'Pragma: no-cache' --header 'Icy-MetaData: 0' --header 'Host: "+ping+"' '"+rfidSend+"' >rfid.txt"
+#      print "/usr/bin/curl -A MTL --header 'Host: "+ping+"' '"+rfidSend+"' >rfid.txt"
+      #subprocess.call("/bin/wget "+optionWget+" '"+ rfidSend+"'", shell=True )
+      #subprocess.call(["/bin/wget", rfidSend])
       print "rfid send", rfid
     if  os.path.exists(path1Click):
       subprocess.call(["/bin/rm", path1Click])
@@ -167,7 +285,6 @@ already=''
 if os.path.exists(userPath):
     already = open(userPath).read().replace('\n','') 
 if already!=mac:
-
     m = "<iq type='get' id='1'><query xmlns='violet:iq:register'/></iq>"
     sendmsg(s,m)
     d = recv_timeout(s)
@@ -290,6 +407,9 @@ print 'receive:',d
 #
     
 print 'Authentication complete....'
+subprocess.call([script, "connect"])
+defaultLedColor = restoreLed( defaultLedColor, ledPath )
+
 print 'Now wait.... (press ^C to exit)...'
 
  
@@ -301,9 +421,35 @@ print 'found ',l1, ' message extra..'
 # start thread
 testButton()
 testPing()
-
+times=int(time.time())
+nextTaichi = taichi(infoTaichi)
 while 1:
+    if infoTaichi:
+      now=int(time.time())
+      if now>(times+nextTaichi) and sleep==0:
+          print "TTTTTTTTAAAAAAIIIICCCCHIIIIIII"
+          choiceMidi = random.randint(0,len(midiList)-1)
+          tt = '/usr/openkarotz/Extra/mid/_'+midiList[ choiceMidi ]+".mp3"
+          subprocess.call( 'echo "'+tt+'" >/tmp/tlist.txt', shell=True )
+          subprocess.call( '/bin/killall mplayer >> /dev/null 2>> /dev/null', shell=True )
+##          subprocess.call( '/usr/bin/mplayer -quiet -playlist /tmp/tlist.txt &', shell=True )
+          from subprocess import Popen  
+#          p = Popen('/usr/bin/mplayer -quiet -playlist /tmp/tlist.txt &', shell=True) 
+          subprocess.call( '/usr/bin/mplayer -quiet -playlist /tmp/tlist.txt', shell=True )
 
+          z = random.randint(0,31)
+          name='/usr/openkarotz/Extra/chor/tmp'+str(z)+'.sh'
+          subprocess.call( name, shell=True )
+#          from subprocess import Popen  
+ #         p = Popen(name, shell=True) 
+          times=times+nextTaichi
+          nextTaichi = taichi(infoTaichi)
+#          p = Popen('/usr/bin/mplayer -quiet -playlist /tmp/tlist.txt &', shell=True) 
+          subprocess.call( '/usr/bin/mplayer -quiet -playlist /tmp/tlist.txt', shell=True )
+
+          defaultLedColor = restoreLed( defaultLedColor, ledPath )
+########################################
+########################################           
     s.setblocking(1)
     if l1>0:
       da=msgExtra[l2]
@@ -339,6 +485,7 @@ while 1:
       print "<<<<<<< ",c
 ######################## sleep
       if c[0:14]=='7f0b00000101ff':
+        sleep=1
         #c#print 'sleep packet'
         subprocess.call([script, "sleep"])
         ##from subprocess import Popen  
@@ -373,6 +520,7 @@ while 1:
 ######################## wakeup
       if c[0:14]=='7f0b00000100ff':
         #c#print 'wakeup packet'
+        sleep=0
         subprocess.call([script,"wakeup"])
         #from subprocess import Popen  
         #p = Popen(cwakeup, shell=True) 
@@ -476,12 +624,13 @@ while 1:
           #subprocess.call([script,"volume",volume])
         if type=='23': #set taichi
           print 'OPENJABNAB.FR type taichi', type, c[20:22]
-          #taichi = rgb[ int(c[20:22],16) ]
+          infoTaichi = c[20:22]
           #subprocess.call([script,"taichi",taichi])
  
 ### others..
         if type=='0e': #taichi
           print 'type taichi', type, c[20:22]
+          infoTaichi = c[20:22]
 ### block crypt message....
       if c[0:4]=='7f0a':
         ##print 'msg type 0a message block'

@@ -19,15 +19,16 @@ do
      # Long Button Press Detected
      # Start or stop Tag Recording
      # ---------------------          
-     echo $line | grep "member=lclick_start"                                          
-     if [ $? -eq 0 ]; then                                                     
+
+     echo $line | grep "member=lclick_start"
+     if [ $? -eq 0 ]; then
         KillProcess
-        if [ -e "$CNF_DATADIR/Run/rfid.record" ]; then 
-            StopTagRecording
-        else
-            StartTagRecording
-	    fi        
+##        PlaySound "$CNF_DATADIR/Sounds/${SOUND}"
+        PlaySound /usr/openkarotz/Extra/mid/_midi_startrecord.mp3
+        echo "A" > /usr/openkarotz/Extra/A
+
      fi
+                                 
      
      # --------------------- 
      # Single Click  Detected
@@ -36,7 +37,7 @@ do
       echo $line | grep "member=click"
       if [ $? -eq 0 ]; then
 ##         PlaySound "$CNF_DATADIR/Sounds/${SOUND}" 
-	    echo "1" > /usr/openkarotz/Extra/1
+        echo "1" > /usr/openkarotz/Extra/1
       fi
       
       # ---------------------  
@@ -46,7 +47,7 @@ do
       echo $line | grep "member=dclick"
       if [ $? -eq 0 ]; then
 ##         PlaySound $CNF_DATADIR/Sounds/${SOUND} 
-	    echo "2" > /usr/openkarotz/Extra/2
+        echo "2" > /usr/openkarotz/Extra/2
        fi
        
        # ---------------------  
@@ -56,10 +57,10 @@ do
        echo $line | grep "member=tclick"  
        if [ $? -eq 0 ]; then                                       
          #PlaySound $CNF_DATADIR/Sounds/flush.mp3
-         PlaySound $CNF_DATADIR/Sounds/${SOUND}
+         PlaySound /usr/openkarotz/Extra/mid/_midi_communion.mp3
          ##/sbin/reboot
          if [ "$KPID" == "0" ]; then
-          python /usr/openkarotz/Extra/nabemu.py >/dev/null &
+          python /usr/openkarotz/Extra/nabemu.py &
           KPID=$!
           ##echo "your pid is $PID"
          else
@@ -75,6 +76,7 @@ do
       # Process Tag Action
       # ---------------------
  
+
       # ---------------------                                 
       # Read TAG ID
       # ---------------------
@@ -86,9 +88,9 @@ do
           # nabemu
           # create string
           echo $RFID_ID > /usr/openkarotz/Extra/R
-          #wget  '"http://'${h}'/vl/rfid.jsp?sn='${mac}'&v=18673&h=4&t='${RFID_ID}'"'
-          ##echo '"http://${h}/vl/rfid.jsp?sn=${mac}&v=18673&h=4&t=${RFID_ID}"'
-          PlaySound $CNF_DATADIR/Sounds/ready.mp3 
+
+          PlaySound /usr/openkarotz/Extra/mid/_midi_RFIDok.mp3
+
       fi
       
       # ---------------------      
@@ -96,7 +98,7 @@ do
       # ---------------------
       echo $line | grep "tag_in"     
       if [ $? -eq 0 ]; then
- 	    RFID_DETECTED=1         
+        RFID_DETECTED=1         
       fi
    
  done
