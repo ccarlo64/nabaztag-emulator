@@ -5,6 +5,7 @@
 #      v3.1 add ping
 #      v3.2 fix rfid problem..... 
 #      v3.3 add taichi add and record voice and fix
+#      v3.4 3 click fix
 import random
 import string
 
@@ -36,6 +37,7 @@ pathLocate='/usr/openkarotz/Extra/locate.txt'
 ledPath ='/usr/openkarotz/Extra/led.txt'
 userPath ='/usr/openkarotz/Extra/user.txt'
 pathRfid='/usr/openkarotz/Extra/R'
+rfidtxt='/usr/openkarotz/Extra/rfid.txt'
 path1Click='/usr/openkarotz/Extra/1'
 path2Click='/usr/openkarotz/Extra/2'
 script = '/usr/openkarotz/Extra/script.sh'
@@ -192,7 +194,7 @@ def testButton():
       rfidSend='http://'+h+'/vl/rfid.jsp?sn='+mac+'&v='+bootVer+'&h=4&t='+rfid ###+''
 #      subprocess.call( "/bin/wget -O rfid.txt "+optionWget+" "+optionWgetPing+" '"+rfidSend+"'", shell=True )  
 
-      subprocess.call( "/usr/bin/curl -0 -A MTL --header 'Accept: ' --header 'Pragma: no-cache' --header 'Icy-MetaData: 0' --header 'Host: "+ping+"' '"+rfidSend+"' >rfid.txt", shell=True )      
+      subprocess.call( "/usr/bin/curl -0 -A MTL --header 'Accept: ' --header 'Pragma: no-cache' --header 'Icy-MetaData: 0' --header 'Host: "+ping+"' '"+rfidSend+"' >"+rfidtxt, shell=True )      
 #      print "/usr/bin/curl -A MTL --header 'Accept: ' --header 'Pragma: no-cache' --header 'Icy-MetaData: 0' --header 'Host: "+ping+"' '"+rfidSend+"' >rfid.txt"
 #      print "/usr/bin/curl -A MTL --header 'Host: "+ping+"' '"+rfidSend+"' >rfid.txt"
       #subprocess.call("/bin/wget "+optionWget+" '"+ rfidSend+"'", shell=True )

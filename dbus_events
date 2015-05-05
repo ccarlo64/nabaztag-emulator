@@ -60,7 +60,7 @@ do
          PlaySound /usr/openkarotz/Extra/mid/_midi_communion.mp3
          ##/sbin/reboot
          if [ "$KPID" == "0" ]; then
-          python /usr/openkarotz/Extra/nabemu.py &
+          python /usr/openkarotz/Extra/nabemu.py >/dev/null 2>/tmp/err.log &
           KPID=$!
           ##echo "your pid is $PID"
          else
