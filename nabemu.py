@@ -125,7 +125,7 @@ def restoreLed( defaultLedColor, ledPath ):
 #<option value="30"  >Beaucoup</option> 0x1e
 #<option value="60"  >Souvent</option> 0x3c
 #<option value="120"  >Un peu</option> 0x78
-#<option value="0"  >Pas de TaïChi</option>
+#<option value="0"  >Pas de TaiChi</option>
 # base source
 #<option value="50" <?php if ($frequency==50) echo 'selected'; ?> >Un peu...</option> 0x32
 #<option value="125" <?php if ($frequency==125) echo 'selected'; ?>>Beaucoup...</option> 0x7d
