@@ -7,7 +7,7 @@
 #      v3.3 add taichi add and record voice and fix
 #      v3.4 3 click fix
 #      v3.5 add auto-re-connect 50try..
-
+#      v3.6 fix taichi at wakeup
 import random
 import string
 
@@ -515,6 +515,8 @@ while loopTry>0:
 
     ######################## wakeup
           if c[0:14]=='7f0b00000100ff':
+            times=int(time.time())          #fix v3.6
+            nextTaichi = taichi(infoTaichi) #fix v3.6
             #c#print 'wakeup packet'
             sleep=0
             subprocess.call([script,"wakeup"])
