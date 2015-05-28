@@ -1,0 +1,17 @@
+please fill the var LOGMAIL and PWD into file snapshot_email
+with your login/password of gmail.com account
+
+copy the file snapshot_email into /usr/www/cgi-bin
+and change the permits 'chmod 777 snapshot_email'
+
+change your security setting in gmail if necessary
+https://security.google.com/settings/security/activity 
+
+
+ok
+
+now to take a picture go to the server - plugin sendpacket - and send: 7fcc000001ff
+wait the mail..
+
+:-)
+

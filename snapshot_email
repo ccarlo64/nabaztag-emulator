@@ -1,0 +1,70 @@
+#!/bin/bash
+
+source /www/cgi-bin/setup.inc
+source /www/cgi-bin/url.inc
+source /www/cgi-bin/utils.inc
+source /www/cgi-bin/leds.inc
+source /www/cgi-bin/ears.inc
+source /www/cgi-bin/webcam.inc
+
+KillProcess
+
+ReadUrlParam
+TDIR="/www/snapshots/"
+
+LOGMAIL=loginname
+PWD=passwordsecret
+
+SMTP=smtp.gmail.com:587
+USER=$LOGMAIL@gmail.com
+FROM=$LOGMAIL@gmail.com
+TO=$LOGMAIL@gmail.com
+FILEMAIL=/tmp/m
+
+FN="snapshot"_`date +'%Y_%m_%d_%H_%M_%S'`
+
+TakeSnapshot
+
+if [ ! -e "$CNF_DATADIR/Run/karotz.sleep" ]; then
+  LedsRestore
+  if [ "$SILENT" == "" ]; then
+    PlaySound /usr/karotz/res/sounds/webcam.mp3
+  fi
+fi
+  
+if [ ! -e "/tmp/picture.jpg" ]; then
+      Log  "Snapshot" "Unable to take snapshot" 1
+      DATA='{"return":"1","msg":"Unable to take snapshot."}'
+      SendResponse "$DATA"
+      exit 0
+fi
+
+#
+# create msg
+#
+
+echo "subject: foto $FN">$FILEMAIL
+makemime /tmp/picture.jpg >>$FILEMAIL
+
+#
+# sendmail
+#
+
+sendmail -H "exec openssl s_client -quiet -connect $SMTP -tls1 -starttls smtp" -f $FROM  -au$USER -ap$PWD $TO 2> /tmp/ftperror <$FILEMAIL
+
+#
+# test error code
+#
+if [ $? -eq 0 ]; then
+  DATA='{"filename":"'$FN'.jpg","return":"0"}'
+else
+  ERR=`cat /tmp/sendmailerror`
+  DATA='{"message":"'$ERR'","return":"0"}'
+  Log  "Snapshot" "Unable to send mail" 1
+fi
+
+SendResponse "$DATA"
+
+
+
+
