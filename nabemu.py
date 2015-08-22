@@ -50,6 +50,7 @@ script = '/usr/openkarotz/Extra/script.sh'
 #h = 'ojn.raspberry.pi'
 #h = 'openznab.it' 
 h = 'openjabnab.fr'   ################# CHANGE HERE
+httpPort=':80'; ## :80 or empty for default
 port = 5222;
 #mac      = "" ################ CHANGE HERE
 mac = open('/sys/class/net/wlan0/address').readline().replace('\n', '').replace(':','') #automac (pixel :) )
@@ -65,7 +66,7 @@ ping=h
 if  os.path.exists(pathLocate):
   subprocess.call(["/bin/rm", pathLocate])
 
-locate='http://'+h+'/vl/locate.jsp?sn='+mac+'&h=4&v='+bootVer#####+'18673'
+locate='http://'+h+httpPort+'/vl/locate.jsp?sn='+mac+'&h=4&v='+bootVer#####+'18673'
 subprocess.call( "/usr/bin/curl -0 -A MTL '"+locate+"' >"+pathLocate, shell=True )
 print locate
 f=open(pathLocate, "r")
@@ -187,14 +188,14 @@ def testButton():
       subprocess.call(["/bin/rm", pathAudioFile])
       tt = "/usr/bin/ffmpeg -f oss -i /dev/dsp "+pathAudioFile+" -t 00:00:03"
       subprocess.call( tt, shell=True )      
-      audio = 'http://'+h+'/vl/record.jsp?sn='+mac+'&v='+bootVer+'&h=4&m=0'
+      audio = 'http://'+h+httpPort+'/vl/record.jsp?sn='+mac+'&v='+bootVer+'&h=4&m=0'
       tt = "/usr/bin/curl -0 --header 'Content-Type:application/octet-stream' --data-binary @"+pathAudioFile+" '"+audio+"'"
       subprocess.call( tt, shell=True )      
     if  os.path.exists(pathRfid):
       rfid = open(pathRfid).read().replace('\n','') 
       rfid=rfid.lower()
       subprocess.call(["/bin/rm", pathRfid])
-      rfidSend='http://'+h+'/vl/rfid.jsp?sn='+mac+'&v='+bootVer+'&h=4&t='+rfid ###+''
+      rfidSend='http://'+h+httpPort+'/vl/rfid.jsp?sn='+mac+'&v='+bootVer+'&h=4&t='+rfid ###+''
       subprocess.call( "/usr/bin/curl -0 -A MTL --header 'Accept: ' --header 'Pragma: no-cache' --header 'Icy-MetaData: 0' --header 'Host: "+ping+"' '"+rfidSend+"' >"+rfidtxt, shell=True )      
       print "rfid send", rfid
     if  os.path.exists(path1Click):
