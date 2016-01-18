@@ -3,7 +3,9 @@
 # Nabaztag emulator for Karotz by Carlo64 :-P
 # 2016 v 004
 # Happy New Year
-
+# 13/01/2016 v4.1
+# - little fix
+# - add log info in autenticate
 import random
 import string
 import md5
@@ -19,11 +21,11 @@ import re
 # variables
 #
 errorSOCK=0
-later=0.3 #delay between send and receive
+later=0.4 #delay between send and receive
 logSW=0 # value: 0 nothing, 1 write file log.txt (warning no size control), 2 console
 sleep=0
 infoTaichi=0
-loopTry=100 ### CHANGE if you want
+loopTry=50 ### CHANGE if you want
 midiList=["midi_1noteA4","midi_1noteB5","midi_1noteBb4","midi_1noteC5",
 "midi_1noteE4","midi_1noteF4","midi_1noteF5","midi_1noteG5","midi_2notesC6C4",
 "midi_2notesC6F5","midi_2notesD4A5","midi_2notesD4G4","midi_2notesD5G4",
@@ -161,12 +163,13 @@ def decodeString( orig ):
 ############################
 def sendmsg(s,m):
     global later    
+    global errorSOCK
     try :
       s.sendall(m)
     except socket.error, e:
         debugLog( 'SENDMSG: sendmsg' )               
-        sys.exit()
-##    debugLog( 'sendmsg: ' + m )        
+        #sys.exit()
+        errorSOCK=1
     time.sleep( later )
     return
 ############################
@@ -274,12 +277,13 @@ while loopTry>0:
     loopTry=loopTry-1
     errorSOCK=0
     
-##    s = createSock( h, port )
+##    createSock
     try:
         ip = socket.gethostbyname( h )
     except socket.error, e:
-        debugLog( 'CREATESOCK: ' + e.strerror )
-        sys.exit()
+        debugLog( 'CREATESOCK: ' ) ##+ e.strerror )
+        errorSOCK=1
+        ##sys.exit()
     ##
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -287,8 +291,9 @@ while loopTry>0:
         s.setblocking(1)
         s.settimeout(2.0) # 20
     except socket.error, e:
-        debugLog( 'CREATESOCK: ' + e.strerror )
-        sys.exit()
+        debugLog( 'CREATESOCK: ' ) ##+ e.strerror )
+        errorSOCK=1
+        ##sys.exit()
     print 'Yeee! Socket Connected to ' + h + ' on ip ' + ip
     
     m = "<?xml version='1.0' encoding='UTF-8'?><stream:stream to='"+h+"' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' version='1.0'>"
@@ -317,8 +322,10 @@ while loopTry>0:
       c=mm.group(1)
     else:
       debugLog('INIT: Error fase 2 nonce not found :(')
-      sys.exit()   
+      errorSOCK=1
+      ##sys.exit()   
       
+    debugLog( 'AUTH base64decode: ' + d )      
     nc="00000001"
     nonce = c
     #         1234567890123
@@ -344,6 +351,14 @@ while loopTry>0:
     other = ',nc='+nc+',qop=auth,digest-uri="'+digest_uri+'",response='+response+',charset=utf-8'
     stringa = 'username="'+mac+'",nonce="'+nonce+'",cnonce="'+cnonce+'"'+other
     a=base64.b64encode(stringa)
+
+    debugLog( 'AUTH pre-base64encode: usename=' + mac )    
+    debugLog( 'AUTH pre-base64encode: nonce=' + nonce )    
+    debugLog( 'AUTH pre-base64encode: cnonce=' + cnonce[:-1] )    
+    debugLog( 'AUTH pre-base64encode: nc=' + nc )    
+    debugLog( 'AUTH pre-base64encode: digest_uri=' + digest_uri )    
+    debugLog( 'AUTH pre-base64encode: response=' + response )    
+    debugLog( 'AUTH pre-base64encode: charset=utf-8' )    
     
     m = '<response xmlns="urn:ietf:params:xml:ns:xmpp-sasl">'+a+'</response>'
     d = sendANDreceive(s,m)
@@ -369,8 +384,8 @@ while loopTry>0:
     m='<iq from=\''+mac+'@'+h+'/boot\' to=\'net.violet.platform@'+h+'/sources\' type=\'get\' id=\'3\'><query xmlns="violet:iq:sources"><packet xmlns="violet:packet" format="1.0"/></query></iq>'
     d = sendANDreceive(s,m)
     bootPacket=re.search('<iq[^>]*><query[^>]*><packet[^>]*>([^<]*)</packet></query></iq>',d) #v4
-    ### 7    
-    m='<iq from="0019db9ed017@'+h+'/boot" to="'+h+'" type=\'set\' id=\'4\'><bind xmlns=\'urn:ietf:params:xml:ns:xmpp-bind\'><resource>idle</resource></bind></iq>'
+    ### 7  v4.1
+    m='<iq from=\''+mac+'@'+h+'/boot" to="'+h+'" type=\'set\' id=\'4\'><bind xmlns=\'urn:ietf:params:xml:ns:xmpp-bind\'><resource>idle</resource></bind></iq>'
     d = sendANDreceive(s,m)
     ### 8
     m='<iq from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' type=\'set\' id=\'5\'><session xmlns=\'urn:ietf:params:xml:ns:xmpp-session\'/></iq>'
@@ -489,10 +504,10 @@ while loopTry>0:
                     print "o" ###,m,status
                     d = sendANDreceive(s,m)
                     if errorSOCK==1:
-                      debugLog( 'ERROR: exit loop while, try reconnect..') ## +e.strerror )                
+                      debugLog( 'ERROR: exit loop while, try reconnect.. try n.ro '+str(loopTry)) ## +e.strerror )                
                       break
                     mm=re.search('<message[^>]*><packet[^>]*>([^<]*)</packet></message>',d)
-                    if mm: #trovato messaggio nel ping
+                    if mm: #found message in ping packet
                       da = d
                     else:
                       da = s.recv(1024)
@@ -505,7 +520,7 @@ while loopTry>0:
                 print "t"
                 #debugLog( 'loop while 1 timeout') ## +e.strerror )
             except socket.error, e: #v4            
-                debugLog( 'ERROR: loop while sock, try reconnect..') ## +e.strerror )
+                debugLog( 'ERROR: loop while sock, try reconnect.. try n.ro '+str(loopTry)) ## +e.strerror )   
                 break
         ##debugLog( 'rcv data=> ' + da )        
         if len(da)>0:
