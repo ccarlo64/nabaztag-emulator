@@ -6,7 +6,7 @@
 # 13/01/2016 v4.1
 # - little fix
 # - add log info in autenticate
-# 15/05/2016 fix timeout / ping + packet
+# 15/02/2016 fix timeout / ping + packet
 import random
 import string
 import md5
