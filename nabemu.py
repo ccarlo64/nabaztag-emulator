@@ -6,7 +6,10 @@
 # 13/01/2016 v4.1
 # - little fix
 # - add log info in autenticate
+<<<<<<< HEAD
 # 15/05/2016 fix timeout / ping + packet
+=======
+>>>>>>> origin/master
 import random
 import string
 import md5
@@ -22,7 +25,11 @@ import re
 # variables
 #
 errorSOCK=0
+<<<<<<< HEAD
 later=0.8 #delay between send and receive
+=======
+later=0.4 #delay between send and receive
+>>>>>>> origin/master
 logSW=0 # value: 0 nothing, 1 write file log.txt (warning no size control), 2 console
 sleep=0
 infoTaichi=0
@@ -391,7 +398,11 @@ while loopTry>0:
     d = sendANDreceive(s,m)
     bootPacket=re.search('<iq[^>]*><query[^>]*><packet[^>]*>([^<]*)</packet></query></iq>',d) #v4
     ### 7  v4.1
+<<<<<<< HEAD
     m='<iq from=\''+mac+'@'+h+'/boot\' to="'+h+'" type=\'set\' id=\'4\'><bind xmlns=\'urn:ietf:params:xml:ns:xmpp-bind\'><resource>idle</resource></bind></iq>'
+=======
+    m='<iq from=\''+mac+'@'+h+'/boot" to="'+h+'" type=\'set\' id=\'4\'><bind xmlns=\'urn:ietf:params:xml:ns:xmpp-bind\'><resource>idle</resource></bind></iq>'
+>>>>>>> origin/master
     d = sendANDreceive(s,m)
     ### 8
     m='<iq from=\''+mac+'@'+h+'/idle\' to=\''+h+'\' type=\'set\' id=\'5\'><session xmlns=\'urn:ietf:params:xml:ns:xmpp-session\'/></iq>'
@@ -503,6 +514,7 @@ while loopTry>0:
             if countSec>20: #10*timeout = 20sec
                 countSec=0
 
+<<<<<<< HEAD
                 idPing=idPing+1
                 if idPing>1000:
                    idPing=1
@@ -532,6 +544,33 @@ while loopTry>0:
                   print "."
                 #  debugLog( 'ERROR: loop while sock, try reconnect.. try n.ro '+str(loopTry)) ## +e.strerror )   
                 #  break
+=======
+                    idPing=idPing+1
+                    if idPing>1000:
+                       idPing=1
+                    m='<presence from=\''+mac+'@'+h+'/idle\' id=\''+str(idPing)+'\'></presence>'
+                    print "o" ###,m,status
+                    d = sendANDreceive(s,m)
+                    if errorSOCK==1:
+                      debugLog( 'ERROR: exit loop while, try reconnect.. try n.ro '+str(loopTry)) ## +e.strerror )                
+                      break
+                    mm=re.search('<message[^>]*><packet[^>]*>([^<]*)</packet></message>',d)
+                    if mm: #found message in ping packet
+                      da = d
+                    else:
+                      da = s.recv(1024)
+                else:
+                    countSec=countSec+1
+                    pollButton()
+                    da = s.recv(1024)
+                    #timeout 2 sec                                    
+            except socket.timeout, e: #v4            
+                print "t"
+                #debugLog( 'loop while 1 timeout') ## +e.strerror )
+            except socket.error, e: #v4            
+                debugLog( 'ERROR: loop while sock, try reconnect.. try n.ro '+str(loopTry)) ## +e.strerror )   
+                break
+>>>>>>> origin/master
         ##debugLog( 'rcv data=> ' + da )        
         if len(da)>0:
           debugLog( 'rcv data=> ' + da )                
