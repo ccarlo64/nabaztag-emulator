@@ -1,4 +1,30 @@
 Nabaztag emulator for Karotz
+2016 simplified installation
+added a self-extracting script
+
+selfextract.it.bsx for openznab.it
+and
+selfextract.fr.bsx for openjabnab.fr
+
+copy into
+/usr/openkarotz
+
+set execute permission
+chmod +x selfextract.it.bsx 
+or
+chmod +x selfextract.fr.bsx 
+
+./selfextract.it.bsx
+or
+./selfextract.fr.bsx
+
+.....
+
+reboot the karotz and after ready voice 
+three clicks in the head
+
+--------------------
+
 update
 
 2015 v3.x
