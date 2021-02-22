@@ -1,0 +1,20 @@
+2021
+Adattato l'emulatore per lavorare sulla base di https://www.freerabbits.nl/
+
+semplificata l'installazione:
+- create una chiavetta usb formattata fat32
+- estraete il contenuto del file zip al suo interno
+- inseritela nel karotz
+- accendete il karotz
+l'installazione è breve, poi partirà il normale boot del coniglio e subito dopo si connetterà al server openjabnab in base alla versione dello zip scelta
+
+le funzioni di freerabbit vengono disabitate ma se continuate ad usarlo e ad aggiungere app/time si mischierà un po tutto...
+
+questo dovrebbe disabilitare l'emulatore
+http://ip_del_coniglio/cgi-bin/notemufull
+
+questo dovrebbe riabilitare l'emulatore
+http://ip_del_coniglio/cgi-bin/yesemufull
+
+
+

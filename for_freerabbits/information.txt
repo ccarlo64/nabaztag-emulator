@@ -1,0 +1,17 @@
+2021
+Adapted the emulator to work on the basis of https://www.freerabbits.nl/
+
+simplified installation:
+- create a fat32 formatted usb key
+- extract the contents of the zip file inside
+- insert it into the karotz
+- turn on the karotz
+the installation is short, then it will start the normal boot of the rabbit and immediately after it will connect to the openjabnab server based on the zip version chosen
+
+the freerabbit functions are disabled but if you continue to use it and add app / time everything will get mixed up a bit ...
+
+this should disable the emulator
+http://rabbit_ip/cgi-bin/notemufull
+
+this should re-enable the emulator
+http://rabbit_ip/cgi-bin/yesemu
